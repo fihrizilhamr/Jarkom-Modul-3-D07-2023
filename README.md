@@ -13,7 +13,7 @@ Anggota Kelompok D07:
 
 ### Soal 0 - Soal 5
 
-Setelah mengalahkan Demon King, perjalanan berlanjut. Kali ini, kalian diminta untuk melakukan register domain berupa riegel.canyon.yyy.com untuk worker Laravel dan granz.channel.yyy.com untuk worker PHP mengarah pada worker yang memiliki IP [prefix IP].x.1.
+Setelah mengalahkan Demon King, perjalanan berlanjut. Kali ini, kalian diminta untuk melakukan register domain berupa riegel.canyon.yyy.com untuk worker Laravel dan granz.channel.yyy.com untuk worker PHP (0) mengarah pada worker yang memiliki IP [prefix IP].x.1. 
 
 Lakukan konfigurasi sesuai dengan peta yang sudah diberikan. (1)
 
@@ -254,7 +254,7 @@ service isc-dhcp-server restart
 4. `service isc-dhcp-server restart`  
    - Me-restart layanan isc-dhcp-server setelah mengonfigurasi.
 
-### Heither (DNS Server):
+#### Heither (DNS Server):
 
 ```
 echo "nameserver 192.168.122.1" > /etc/resolv.conf
@@ -334,7 +334,7 @@ service bind9 restart
 
 1. Konfigurasi DNS server pada `/etc/bind/named.conf.options`:
    - Menentukan direktori untuk BIND cache.
-   - Menetapkan server DNS untuk forwarding (8.8.8.8, 8.8.8.4, 192.168.122.1, 0.0.0.0).
+   - Menetapkan server DNS untuk forwarding (8.8.8.8, 8.8.8.4, 192.168.122.1, 0.0.0.0), agar dapat mengakses internet.
 
 2. `service bind9 restart`  
    - Me-restart layanan bind9 setelah mengonfigurasi.
@@ -361,9 +361,10 @@ service bind9 restart
 8. `service bind9 restart`  
    - Me-restart layanan BIND9 setelah menambahkan konfigurasi zona.
 
+#### Screenshots
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/14d8ab61-32e7-4df4-bb30-16912a66264c">
 
-> <img width="544" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/14d8ab61-32e7-4df4-bb30-16912a66264c">
-> <img width="544" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/cb407268-8dd7-4f85-96d8-ffceec0a53c4">
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/cb407268-8dd7-4f85-96d8-ffceec0a53c4">
 
 
 ### Soal 6
@@ -372,6 +373,158 @@ Berjalannya waktu, petualang diminta untuk melakukan deployment.
 Pada masing-masing worker PHP, lakukan konfigurasi virtual host untuk website [berikut](https://drive.google.com/file/d/1ViSkRq7SmwZgdK64eRbr5Fm1EGCTPrU1/view?usp=sharing) dengan menggunakan php 7.3. (6)
 
 **Jawaban**
+
+#### PHP Workers (Lawine, Linie, Lugner):
+
+```
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+apt-get update
+apt-get install nginx php7.3 php-fpm ca-certificates openssl unzip wget -y 
+
+wget --no-check-certificate "https://drive.google.com/uc?export=download&id=1ViSkRq7SmwZgdK64eRbr5Fm1EGCTPrU1" -O download.zip
+unzip download.zip
+mv modul-3 /var/www/granz.channel.d07.com
+
+echo "
+server {
+    listen 80;
+    root /var/www/granz.channel.d07.com;
+    index index.php index.html index.htm;
+    server_name granz.channel.d07.com;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php7.3-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+
+    error_log /var/log/nginx/granz_error.log;
+    access_log /var/log/nginx/granz_access.log;
+}
+" > /etc/nginx/sites-available/granz.channel.d07.com
+
+rm -rf /etc/nginx/sites-enabled/default
+
+ln -s /etc/nginx/sites-available/granz.channel.d07.com /etc/nginx/sites-enabled
+
+service php7.3-fpm start
+service nginx restart
+```
+
+1. Mengunduh dan mengekstrak file dari Google Drive.
+
+2. Memindahkan modul-3 ke direktori `/var/www/granz.channel.d07.com`.
+
+3. Mengkonfigurasi Nginx untuk situs `granz.channel.d07.com`:
+   - Menentukan root direktori dan file index.
+   - Mengonfigurasi location untuk menangani permintaan ke PHP scripts.
+   - Menyimpan konfigurasi di `/etc/nginx/sites-available/granz.channel.d07.com`.
+
+4. Menghapus konfigurasi default Nginx.
+
+5. Membuat symbolic link untuk konfigurasi baru.
+
+6. Memulai layanan PHP-FPM dan me-restart layanan Nginx.
+
+#### Load Balancer (Eisen):
+
+
+```
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+
+apt-get update
+apt-get install -y bind9 nginx apache2-utils
+
+echo "
+upstream backend  {
+    server 10.25.3.1; # IP Lawine
+    server 10.25.3.2; # IP Linie
+    server 10.25.3.3; # IP Lugner
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        proxy_pass http://backend;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header Host \$http_host;
+    }
+
+    error_log /var/log/nginx/granz_error.log;
+    access_log /var/log/nginx/granz_access.log;
+}" > /etc/nginx/sites-available/granz.channel.d07.com
+
+rm -rf /etc/nginx/sites-enabled/default
+
+ln -s /etc/nginx/sites-available/granz.channel.d07.com /etc/nginx/sites-enabled
+
+service bind9 restart
+service nginx restart
+```
+
+1. Mengonfigurasi Nginx untuk berperan sebagai proxy load balancer:
+   - Menentukan backend server dengan alamat IP Lawine, Linie, dan Lugner.
+   - Mengonfigurasi location untuk meneruskan permintaan ke backend server.
+   - Menyimpan konfigurasi di `/etc/nginx/sites-available/granz.channel.d07.com`.
+
+2. Menonaktifkan konfigurasi default Nginx.
+
+3. Membuat symbolic link untuk konfigurasi baru.
+
+4. Me-restart layanan BIND9 dan Nginx.
+
+#### Client (Revolte, Richter, Sein, Stark):
+
+```
+apt-get update
+apt-get install lynx apache2-utils -y
+apt-get install apache2-utils -y
+```
+
+#### DNS Server (Heither):
+
+```
+echo "
+;
+; BIND data file for local loopback interface
+;
+\$TTL    604800
+@       IN      SOA     granz.channel.d07.com. root.granz.channel.d07.com. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      granz.channel.d07.com.
+@       IN      A       10.25.2.2 ; IP Eisen
+www     IN      CNAME   granz.channel.d07.com." > /etc/bind/granz/granz.channel.d07.com
+
+service bind9 restart
+```
+1. Mengkonfigurasi zona Granz pada `/etc/bind/granz/granz.channel.d07.com`:
+   - Menetapkan alamat IP (`10.25.2.2`) untuk domain.
+2. Me-restart layanan BIND9.
+
+
+#### Screenshots
+><img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/b6f7437e-4ece-4043-a11e-f6d283d105fd">
+
+><img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/cac8a5d3-6f6b-4d4b-93c2-364aaf01c88b">
+
+><img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/d6661af0-dd2a-4075-8120-5f7f1a59b7e4">
+
 
 ### Soal 7
 
