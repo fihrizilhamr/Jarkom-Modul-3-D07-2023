@@ -554,24 +554,111 @@ Dengan menggunakan algoritma Round Robin, lakukan testing dengan menggunakan 3 w
 
 **Jawaban**
 
-### Soal 10
+### Soal 10 - Soal 12
 
 Selanjutnya coba tambahkan konfigurasi autentikasi di LB dengan dengan kombinasi username: “netics” dan password: “ajkyyy”, dengan yyy merupakan kode kelompok. Terakhir simpan file “htpasswd” nya di /etc/nginx/rahasisakita/ (10)
 
-
-**Jawaban**
-
-### Soal 11
-
 Lalu buat untuk setiap request yang mengandung /its akan di proxy passing menuju halaman https://www.its.ac.id. (11) hint: (proxy_pass)
-
-**Jawaban**
-
-### Soal 12
 
 Selanjutnya LB ini hanya boleh diakses oleh client dengan IP [Prefix IP].3.69, [Prefix IP].3.70, [Prefix IP].4.167, dan [Prefix IP].4.168. (12) hint: (fixed in dulu clinetnya)
 
 **Jawaban**
+
+#### Load Balancer (Eisen)
+
+```
+mkdir /etc/nginx/rahasisakita/
+htpasswd -cb /etc/nginx/rahasisakita/.htpasswd netics ajkd07
+service nginx restart
+echo "
+upstream backend  {
+    server 10.25.3.1; #IP Lawine
+    server 10.25.3.2; #IP Linie
+    server 10.25.3.3; #IP Lugner
+}
+
+server {
+    listen 80;
+    server_name _;
+
+    location / {
+        allow 10.25.3.69;
+        allow 10.25.3.70;
+        allow 10.25.4.167;
+        allow 10.25.4.168;
+        deny all;
+
+        proxy_pass http://backend;
+        proxy_set_header    X-Real-IP \$remote_addr;
+        proxy_set_header    X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header    Host \$http_host;
+
+        auth_basic \"Administrator's Area\";
+        auth_basic_user_file /etc/nginx/rahasisakita/.htpasswd;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+
+    location /its {
+        allow 10.25.3.69;
+        allow 10.25.3.70;
+        allow 10.25.4.167;
+        allow 10.25.4.168;
+        deny all;
+
+        proxy_pass https://www.its.ac.id;
+
+        auth_basic \"Administrator's Area\";
+        auth_basic_user_file /etc/nginx/rahasisakita/.htpasswd;
+    }
+
+    error_log /var/log/nginx/granz_error.log;
+    access_log /var/log/nginx/granz_access.log;
+}
+" > /etc/nginx/sites-available/granz.channel.d07.com
+
+service nginx restart
+```
+
+1. `mkdir /etc/nginx/rahasisakita/`  
+   - Membuat direktori `/etc/nginx/rahasisakita/` untuk menyimpan file konfigurasi autentikasi.
+
+2. `htpasswd -cb /etc/nginx/rahasisakita/.htpasswd netics ajkd07`  
+   - Membuat file `.htpasswd` dalam direktori `/etc/nginx/rahasisakita/` dan menambahkan user `netics` dan password `ajkd07` ke dalamnya.
+
+3. `service nginx restart`  
+   - Me-restart layanan Nginx agar konfigurasi yang baru diaplikasikan.
+
+4. Mengkonfigurasi Nginx dengan autentikasi dasar:
+   - `location /`:
+     - Menetapkan alamat IP yang diizinkan untuk mengakses (`allow` dan `deny`).
+     - Mengarahkan permintaan ke backend worker server dengan menggunakan `proxy_pass`.
+     - Mengaktifkan autentikasi dasar dengan pesan "Administrator's Area" dan menggunakan file `.htpasswd` untuk user dam password.
+   - `location /its`:
+     - Sama seperti lokasi sebelumnya, tetapi mengarahkan permintaan ke `https://www.its.ac.id`.
+
+5. `service nginx restart`  
+   - Me-restart layanan Nginx setelah mengonfigurasi lokasi dan autentikasi.
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/f3739fdd-00ce-437a-96ef-9a17c6ae1dc7">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/0c76d027-0ef4-4fa8-84d3-706c51cf0812">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/ed10473e-3b6b-4e86-a978-eb5e3bb2f41a">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/10e3ed0d-6248-4801-bf76-58e8a8d79a98">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/bc48d95d-8b34-4089-985b-9b9687cdd97a">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/acbf38a6-c391-4b87-b41a-670a33ebd1bb">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/ed10473e-3b6b-4e86-a978-eb5e3bb2f41a">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/10e3ed0d-6248-4801-bf76-58e8a8d79a98">
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/0d69c702-3079-4207-973c-6d9c59f7429e">
 
 
 
