@@ -9,6 +9,9 @@ Anggota Kelompok D07:
 | Danno Denis Dhaifullah | 5025211027 |
 | Fihriz Ilham Rabbany | 5025211040 |
 
+## File Project GNS3
+[Download File Project GNS3](https://drive.google.com/drive/folders/1wIxy6h0Sr8api050JvDmCSTAg2q9_sU-?usp=drive_link)
+
 ## Pembahasan
 
 ### Soal 0 - Soal 5
