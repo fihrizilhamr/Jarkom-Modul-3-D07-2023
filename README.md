@@ -538,6 +538,73 @@ aturlah agar Eisen dapat bekerja dengan maksimal, lalu lakukan testing dengan 10
 
 **Jawaban**
 
+Pada heiter, arahkan DNS mengarah ke Load balancer dengan script berikut :
+
+```
+#!bin/bash
+
+echo '
+;
+; BIND data file for local loopback interface
+;
+$TTL    604800
+@       IN      SOA     granz.channel.d07.com. root.granz.channel.d07.com. (
+                        2023131101      ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@               IN      NS      granz.channel.d07.com.
+@               IN      A       10.25.2.2       ; IP Eisen
+www             IN      CNAME   granz.channel.d07.com.
+' > /etc/bind/granz/granz.channel.d07.com
+
+service bind9 restart
+```
+
+pada eisen setup loadbalancer round robin dengan script berikut :
+
+```
+service nginx start
+
+cp lb-roundrobin /etc/nginx/sites-available/lb-granz
+
+rm -f /etc/nginx/sites-enabled/lb-granz
+ln -s /etc/nginx/sites-available/lb-granz /etc/nginx/sites-enabled/
+
+service nginx restart
+```
+
+Adapun konten file lb-roundrobin sebagai berikut:
+
+```
+upstream worker_round_robin {
+  server 10.25.3.1;
+  server 10.25.3.2;
+  server 10.25.3.3;
+}
+
+server {
+    listen 80;
+    server_name granz.channel.b14.com www.granz.channel.d07.com;
+
+    root /var/www/html;
+
+    index index.html index.htm index.nginx-debian.html;
+
+    location / {
+        proxy_pass http://worker_round_robin;
+    }
+    
+}
+```
+
+<img width="634" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/afeda222-35d1-467c-9ea1-775861a6d963">
+
+<img width="493" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/ee6d37b4-1f6e-4178-97ce-e5e09f1419ab">
+
+
 ### Soal 8
 
 Karena diminta untuk menuliskan grimoire, buatlah analisis hasil testing dengan 200 request dan 10 request/second masing-masing algoritma Load Balancer dengan ketentuan sebagai berikut:
@@ -548,11 +615,83 @@ Karena diminta untuk menuliskan grimoire, buatlah analisis hasil testing dengan 
 
 **Jawaban**
 
+Lakukan percobaan menggunakan script load balancer yang disediakan dengan menambahkan pada bagian upworker. Kemudian saat melakukan running di client dengan command ``ab -n 200 -c 10 http://www.granz.channel.d07.com/`` jalankan htop pada masing masing worker. Maka hasilnya akan seperti berikut:
+
+a. Round Robin
+
+<img width="552" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/714206e6-a6d8-4b9b-ad3f-9dff403c9219">
+
+
+<img width="749" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/e45ba5b8-2f3b-4dea-8ba8-8ab2fc59cb25">
+
+
+b. Least Connection
+
+<img width="566" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/c56ddc84-ae84-452b-b4d3-0ba45bd99d3a">
+
+
+<img width="744" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/eb662eee-468a-4962-a276-c258ed2fe303">
+
+
+c. IP Hash
+
+<img width="554" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/bdd4c66f-e824-45c4-9d91-b50ee68178a1">
+
+
+<img width="747" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/42242342-62a8-4f58-aec1-aba5538a4c5e">
+
+
+d. Generic Hash
+
+<img width="557" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/40daef9f-a10c-4ab3-8bff-b5de4c714c58">
+
+
+<img width="746" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/23a3deca-a334-4e97-a89c-8befa33a5c62">
+
+
+<img width="746" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/1e8e8953-abbe-4304-9386-cb03e1bdc1f4">
+
+
 ### Soal 9
 
 Dengan menggunakan algoritma Round Robin, lakukan testing dengan menggunakan 3 worker, 2 worker, dan 1 worker sebanyak 100 request dengan 10 request/second, kemudian tambahkan grafiknya pada grimoire. (9)
 
 **Jawaban**
+
+Lakukan percobaan menggunakan _comment node worker_ di _load balancer_ yang disediakan pada bagian upworker. Kemudian saat melakukan running di client dengan command 
+
+``ab -n 100 -c 10 http://www.granz.channel.d07.com/`` 
+
+Jalankan htop pada masing masing worker.
+
+#### a. 3 worker
+
+<img width="542" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/2c6e34d2-cd3a-4585-bcb2-34a747d107d5">
+
+<img width="744" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/59fc7a73-2f91-407d-be5a-aecdde37e2ff">
+
+
+#### b. 2 worker
+
+<img width="557" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/4171ffbf-bad5-48da-b2aa-7b9773bc0b74">
+
+<img width="747" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/b77f4a39-e1d4-43ef-b739-7de080eb8a60">
+
+
+#### c. 1 worker
+
+<img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/6511a317-a949-405e-9784-b7e2eacbc2c4">
+
+<img width="743" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/beef055b-94ba-4291-92d5-3cfd4a01533b">
+
+
+#### d. Grafik
+- 3 Worker : 187,69
+- 2 Worker : 154,88
+- 1 Worker : 259,02
+
+<img width="1000" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/105486369/b95384d6-5ced-440d-bc47-4a0f7e2aef39">
+
 
 ### Soal 10 - Soal 12
 
