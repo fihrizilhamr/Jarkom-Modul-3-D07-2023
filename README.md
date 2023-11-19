@@ -564,7 +564,7 @@ Selanjutnya LB ini hanya boleh diakses oleh client dengan IP [Prefix IP].3.69, [
 
 **Jawaban**
 
-#### Load Balancer (Eisen)
+#### Load Balancer (Eisen):
 
 ```
 mkdir /etc/nginx/rahasisakita/
@@ -642,6 +642,8 @@ service nginx restart
 5. `service nginx restart`  
    - Me-restart layanan Nginx setelah mengonfigurasi lokasi dan autentikasi.
 
+
+#### Screenshots
 > <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/f3739fdd-00ce-437a-96ef-9a17c6ae1dc7">
 
 > <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/0c76d027-0ef4-4fa8-84d3-706c51cf0812">
@@ -669,11 +671,266 @@ Semua data yang diperlukan, diatur pada Denken dan harus dapat diakses oleh Frie
 
 **Jawaban**
 
+#### Denken (Database Server):
+
+```
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+apt-get update
+apt-get install mariadb-server -y
+service mysql start
+
+mysql -u root -p <<EOF
+CREATE USER 'kelompokd07'@'%' IDENTIFIED BY 'passwordd07';
+CREATE USER 'kelompokd07'@'localhost' IDENTIFIED BY 'passwordd07';
+CREATE DATABASE dbkelompokd07;
+GRANT ALL PRIVILEGES ON *.* TO 'kelompokd07'@'%';
+GRANT ALL PRIVILEGES ON *.* TO 'kelompokd07'@'localhost';
+FLUSH PRIVILEGES;
+
+exit
+EOF
+
+mysql -u kelompokd07 -p<<EOF
+SHOW DATABASES; 
+exit
+EOF
+
+echo "
+[mysqld]
+skip-networking=0
+skip-bind-address" >> /etc/mysql/my.cnf
+
+service mysql restart
+```
+
+1. Membuat user dan database baru, memberikan hak akses, dan menyimpan konfigurasi:
+   - Membuat pengguna 'kelompokd07' dengan kata sandi 'passwordd07' yang dapat diakses dari semua host.
+   - Membuat pengguna 'kelompokd07' dengan kata sandi 'passwordd07' yang dapat diakses hanya dari localhost.
+   - Membuat database 'dbkelompokd07'.
+   - Memberikan hak akses penuh kepada pengguna 'kelompokd07' untuk semua database dari semua host dan hanya localhost.
+   - Me-restart MariaDB setelah konfigurasi.
+
+2. Mengaktifkan akses jaringan dengan mengedit konfigurasi MariaDB di `/etc/mysql/my.cnf`:
+   - `skip-networking=0` mengaktifkan akses jaringan.
+   - `skip-bind-address` mengabaikan pengaturan bind address.
+
+3. `service mysql restart`  
+   - Me-restart layanan MariaDB setelah konfigurasi.
+
+#### Laravel Worker (Frieren, Flamme, Fern):
+
+```
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+apt-get update
+apt-get install mariadb-client -y
+
+mariadb --host=10.25.2.1 --port=3306 --user=kelompokd07 --password
+```
+
+1. Menggunakan klien MariaDB untuk terhubung ke server. 
+   - Terhubung ke server MariaDB (`--host=10.25.2.1 --port=3306`) menggunakan username dan password yang telah dibuat sebelumnya.
+
+#### Screenshots
+
+><img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/a90d6991-5896-43a4-9900-49401dd33e19">
+
+
 ### Soal 14
 
 Frieren, Flamme, dan Fern memiliki Riegel Channel sesuai dengan quest guide berikut. Jangan lupa melakukan instalasi PHP8.0 dan Composer (14)
 
 **Jawaban**
+
+#### Laravel Worker (Frieren, Flamme, Fern):
+
+```
+echo "nameserver 192.168.122.1" > /etc/resolv.conf
+apt-get update
+apt-get install -y lsb-release ca-certificates apt-transport-https software-properties-common gnupg2
+
+curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+
+sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+
+apt-get update
+apt-get install php8.0-mbstring php8.0-xml php8.0-cli php8.0-common php8.0-intl php8.0-opcache php8.0-readline php8.0-mysql php8.0-fpm php8.0-curl unzip wget -y
+
+apt-get install nginx -y
+
+wget https://getcomposer.org/download/2.0.13/composer.phar
+chmod +x composer.phar
+mv composer.phar /usr/bin/composer
+
+apt-get install git -y
+
+cd /var/www/
+
+git clone https://github.com/martuafernando/laravel-praktikum-jarkom.git
+
+cd laravel-praktikum-jarkom
+
+composer update
+
+cp .env.example .env
+
+echo "
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost
+
+LOG_CHANNEL=stack
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=mysql
+DB_HOST=10.25.2.1
+DB_PORT=3306
+DB_DATABASE=dbkelompokd07
+DB_USERNAME=kelompokd07
+DB_PASSWORD=passwordd07
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
+SESSION_LIFETIME=120
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=smtp
+MAIL_HOST=mailpit
+MAIL_PORT=1025
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="\${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+PUSHER_APP_ID=
+PUSHER_APP_KEY=
+PUSHER_APP_SECRET=
+PUSHER_HOST=
+PUSHER_PORT=443
+PUSHER_SCHEME=https
+PUSHER_APP_CLUSTER=mt1
+
+VITE_PUSHER_APP_KEY="\${PUSHER_APP_KEY}"
+VITE_PUSHER_HOST="\${PUSHER_HOST}"
+VITE_PUSHER_PORT="\${PUSHER_PORT}"
+VITE_PUSHER_SCHEME="\${PUSHER_SCHEME}"
+VITE_PUSHER_APP_CLUSTER="\${PUSHER_APP_CLUSTER}"
+" > /var/www/laravel-praktikum-jarkom/.env
+
+php artisan migrate:fresh
+php artisan db:seed --class=AiringsTableSeeder
+
+php artisan key:generate
+php artisan jwt:secret
+
+echo "
+server {
+    listen 80;
+    root /var/www/laravel-praktikum-jarkom/public;
+    index index.php index.html index.htm;
+    server_name _;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    # pass PHP scripts to FastCGI server
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.0-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+
+    error_log /var/log/nginx/riegel_error.log;
+    access_log /var/log/nginx/riegel_access.log;
+}" > /etc/nginx/sites-available/riegel.canyon.d07.com
+
+ln -s /etc/nginx/sites-available/riegel.canyon.d07.com /etc/nginx/sites-enabled/
+
+chown -R www-data:www-data /var/www/laravel-praktikum-jarkom/storage
+
+rm -rf /etc/nginx/sites-enabled/default
+
+service php8.0-fpm stop
+service php8.0-fpm start
+service nginx restart
+```
+
+
+1. Mengunduh dan menambahkan kunci repositori PHP:
+
+   ```bash
+   curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+   sh -c 'echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'
+   ```
+
+2. `apt-get install php8.0-mbstring php8.0-xml php8.0-cli php8.0-common php8.0-intl php8.0-opcache php8.0-readline php8.0-mysql php8.0-fpm php8.0-curl unzip wget -y`  
+   - Menginstal PHP 8.0 dan beberapa ekstensi yang dibutuhkan.
+
+3. Mengunduh dan menginstal Composer:
+
+   ```bash
+   wget https://getcomposer.org/download/2.0.13/composer.phar
+   chmod +x composer.phar
+   mv composer.phar /usr/bin/composer
+   ```
+
+4.  `git clone https://github.com/martuafernando/laravel-praktikum-jarkom.git`  
+    - Mengunduh repositori Laravel dari GitHub.
+
+5.  `composer update`  
+    - Memperbarui dependensi Laravel menggunakan Composer.
+
+6.  Membuat salinan file `.env.example` menjadi `.env`.
+
+7.  Mengonfigurasi file `.env` dengan pengaturan database dan lainnya.
+
+8.  `php artisan migrate:fresh`  
+    - Menjalankan migrasi basis data.
+
+9.  `php artisan db:seed --class=AiringsTableSeeder`  
+    - Menjalankan seeder untuk mengisi basis data.
+
+10. `php artisan key:generate`  
+    - Menghasilkan kunci aplikasi Laravel.
+
+11. `php artisan jwt:secret`  
+    - Menghasilkan kunci rahasia untuk JWT.
+
+12. Membuat konfigurasi Nginx untuk aplikasi Laravel di `/etc/nginx/sites-available/riegel.canyon.d07.com`.
+
+13. Membuat symbolic link untuk konfigurasi baru di `/etc/nginx/sites-enabled/`.
+
+14. Menyesuaikan kepemilikan direktori penyimpanan Laravel.
+
+15. Menghapus konfigurasi default Nginx.
+
+16. Me-restart layanan PHP-FPM dan Nginx.
+
+
+#### Screenshots
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/77e4eb52-5e11-4632-8c91-92344b0d7c44">
 
 ### Soal 15 - Soal 17
 
@@ -690,6 +947,71 @@ Untuk memastikan ketiganya bekerja sama secara adil untuk mengatur Riegel Channe
 
 **Jawaban**
 
+#### Load Balancer (Eisen):
+
+```
+echo "
+upstream laravel {
+    server 10.25.4.1; # IP Frieren
+    server 10.25.4.2; # IP Flamme
+    server 10.25.4.3; # IP Fern
+}
+
+server {
+    listen 80;
+    server_name riegel.canyon.d07.com;
+
+    location / {
+        proxy_pass http://laravel;
+        proxy_bind 10.25.2.2;  # IP Eisen
+    }
+    error_log /var/log/nginx/riegel_error.log;
+    access_log /var/log/nginx/riegel_access.log;
+}
+" > /etc/nginx/sites-available/riegel.canyon.d07.com
+
+ln -s /etc/nginx/sites-available/riegel.canyon.d07.com /etc/nginx/sites-enabled
+
+service bind9 restart
+service nginx restart
+```
+
+1. Mengkonfigurasi Nginx untuk load balancing pada `/etc/nginx/sites-available/riegel.canyon.d07.com`.
+
+2. Mengimplementasikan proxy bind pada load balancer. `proxy_bind 10.25.2.2;`, menetapkan alamat IP yang akan digunakan oleh Nginx untuk membuat koneksi ke backend server.
+
+3. Membuat symbolic link untuk konfigurasi baru di `/etc/nginx/sites-enabled/`.
+
+4. Me-restart layanan Nginx.
+
+#### DNS Server (Heither):
+
+```
+;
+; BIND data file for local loopback interface
+;
+\$TTL    604800
+@       IN      SOA     riegel.canyon.d07.com. root.riegel.canyon.d07.com. (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      riegel.canyon.d07.com.
+@       IN      A       10.25.2.2 ; IP Eisen
+www     IN      CNAME   riegel.canyon.d07.com.
+```
+
+1. Mengkonfigurasi zona DNS di `/etc/bind/riegel/riegel.canyon.d07.com`:
+   
+2. Me-restart layanan BIND9.
+
+
+#### Screenshots
+
+> <img width="555" alt="image" src="https://github.com/fihrizilhamr/Jarkom-Modul-3-D07-2023/assets/116176265/604f1a88-6020-4b27-af4a-9ba66e8e19cc">
+
 ### Soal 19
 
 Untuk meningkatkan performa dari Worker, coba implementasikan PHP-FPM pada Frieren, Flamme, dan Fern. Untuk testing kinerja naikkan 
@@ -697,9 +1019,55 @@ Untuk meningkatkan performa dari Worker, coba implementasikan PHP-FPM pada Frier
 - pm.start_servers
 - pm.min_spare_servers
 - pm.max_spare_servers
+
 sebanyak tiga percobaan dan lakukan testing sebanyak 100 request dengan 10 request/second kemudian berikan hasil analisisnya pada Grimoire.(19)
 
 **Jawaban**
+
+#### Laravel Worker (Frieren, Flamme, Fern):
+
+```
+echo "
+[www]
+user = www-data
+group = www-data
+listen = /run/php/php8.0-fpm.sock
+listen.owner = www-data
+listen.group = www-data
+php_admin_value[disable_functions] = exec,passthru,shell_exec,system
+php_admin_flag[allow_url_fopen] = off
+
+; Choose how the process manager will control the number of child processes.
+
+pm = dynamic
+pm.max_children = 75
+pm.start_servers = 10
+pm.min_spare_servers = 5
+pm.max_spare_servers = 20
+pm.process_idle_timeout = 10s " > /etc/php/8.0/fpm/pool.d/www.conf
+
+service php8.0-fpm stop
+service php8.0-fpm start
+service nginx restart
+```
+
+1. Membuat atau mengedit konfigurasi PHP-FPM pada `/etc/php/8.0/fpm/pool.d/www.conf`.
+   - `[www]`: Ini adalah blok konfigurasi untuk pool PHP-FPM yang bernama `www`.
+   - `user` dan `group`: Menentukan pengguna dan grup yang akan digunakan oleh PHP-FPM process pool.
+   - `listen`: Menunjukkan tempat PHP-FPM akan mendengarkan permintaan. Dalam hal ini, menggunakan `/run/php/php8.0-fpm.sock`.
+   - `listen.owner` dan `listen.group`: Menetapkan pemilik dan grup untuk socket yang didengarkan oleh PHP-FPM.
+   - `php_admin_value[disable_functions]`: Menyaring fungsi-fungsi PHP tertentu untuk keamanan. 
+   - `php_admin_flag[allow_url_fopen]`: Menetapkan apakah fungsi `allow_url_fopen` diaktifkan atau tidak. 
+   - Konfigurasi lainnya, seperti pengaturan manajemen proses (pm), jumlah maksimum anak proses (pm.max_children), dan pengaturan lainnya.
+
+2. Menghentikan layanan PHP-FPM dan memulai ulang untuk menerapkan konfigurasi baru.
+
+3. Me-restart layanan Nginx untuk memastikan bahwa perubahan pada PHP-FPM diakui:
+
+#### Screenshots
+>
+
+
 
 ### Soal 20
 
@@ -707,3 +1075,43 @@ Nampaknya hanya menggunakan PHP-FPM tidak cukup untuk meningkatkan performa dari
 
 
 **Jawaban**
+
+#### Load Balancer (Eisen):
+
+```
+echo "
+upstream laravel {
+    least_conn;
+    server 10.25.4.1; # IP Frieren
+    server 10.25.4.2; # IP Flamme
+    server 10.25.4.3; # IP Fern
+}
+
+server {
+    listen 80;
+    server_name riegel.canyon.d07.com;
+
+    location / {
+        proxy_pass http://laravel;
+        proxy_bind 10.25.2.2;  # IP Eisen
+    }
+
+    error_log /var/log/nginx/riegel_error.log;
+    access_log /var/log/nginx/riegel_access.log;
+}
+" > /etc/nginx/sites-available/riegel.canyon.d07.com
+
+ln -s /etc/nginx/sites-available/riegel.canyon.d07.com /etc/nginx/sites-enabled
+
+service bind9 restart
+service nginx restart
+```
+
+1.  `upstream laravel`: Menentukan grup backend server dengan menggunakan algoritma `least_conn`. Ini berarti setiap permintaan baru akan diberikan ke server yang memiliki jumlah koneksi yang paling sedikit.
+
+2.    `service bind9 restart`: Me-restart layanan BIND9 untuk mengenali konfigurasi DNS baru jika ada perubahan.
+
+3.    `service nginx restart`: Me-restart layanan Nginx untuk menerapkan konfigurasi Load Balancer baru.
+
+#### Screenshots
+> 
