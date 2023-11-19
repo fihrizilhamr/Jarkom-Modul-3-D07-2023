@@ -1257,3 +1257,6 @@ service nginx restart
 
 #### Screenshots
 > 
+
+## Kendala
+Tidak ada kendala yang signifikan. 
